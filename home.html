@@ -1,0 +1,108 @@
+{% load static %}
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <link rel="stylesheet" href="{% static 'css/styles.css' %}">
+    <title>Home - Construction Estimator</title>
+</head>
+<body>
+    <header>
+        <h1>current price of building materials in Nigerial</h1>
+    </header>
+    <div class="container">
+        <h2>Welcome, {{ user.username }}</h2>
+    <nav style="display: flex; gap: 20px; justify-content: center; align-items: center; padding: 15px; background-color: #f8f9fa; box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1); font-family: 'Arial', sans-serif;">
+      <a href="{% url 'estimate_material' %}" style="text-decoration: none; color: #007bff; font-weight: bold; transition: color 0.3s, transform 0.3s;" onmouseover="this.style.color='#0056b3'; this.style.transform='scale(1.1)'" onmouseout="this.style.color='#007bff'; this.style.transform='scale(1)'">
+          Home
+      </a>
+    <a href="{% url 'home' %}" style="text-decoration: none; color: #007bff; font-weight: bold; transition: color 0.3s, transform 0.3s;" onmouseover="this.style.color='#0056b3'; this.style.transform='scale(1.1)'" onmouseout="this.style.color='#007bff'; this.style.transform='scale(1)'">
+        Materials
+    </a>
+    <a href="{% url 'about' %}" style="text-decoration: none; color: #007bff; font-weight: bold; transition: color 0.3s, transform 0.3s;" onmouseover="this.style.color='#0056b3'; this.style.transform='scale(1.1)'" onmouseout="this.style.color='#007bff'; this.style.transform='scale(1)'">
+        About Us
+    </a>
+    <a href="{% url 'contact' %}" style="text-decoration: none; color: #007bff; font-weight: bold; transition: color 0.3s, transform 0.3s;" onmouseover="this.style.color='#0056b3'; this.style.transform='scale(1.1)'" onmouseout="this.style.color='#007bff'; this.style.transform='scale(1)'">
+        Contact Us
+    </a>
+    </nav>
+    
+        <form method="POST" action="{% url 'logout' %}" style="float: right;">
+            {% csrf_token %}
+            <button type="submit">Logout</button>
+        </form>
+        <h2>Available Construction Materials</h2>
+        <form id="materials-form" method="POST" action="{% url 'export_to_excel' %}">
+            {% csrf_token %}
+            <table style="width: 100%; border-collapse: collapse;">
+                <thead>
+                    <tr style="background-color: #f1f1f1;">
+                        <th style="text-align: left; padding: 8px;">#</th>
+                        <th style="text-align: left; padding: 8px;">Select</th>
+                        <th style="text-align: left; padding: 8px;">Material Name</th>
+                        <th style="text-align: left; padding: 8px;">Quantity</th>
+                        <th style="text-align: left; padding: 8px;">Unit</th>
+                        <th style="text-align: left; padding: 8px;">Price</th>
+                        <th style="text-align: left; padding: 8px;">Amount</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    {% for material in materials %}
+                    <tr>
+                        <td style="padding: 8px; border-bottom: 1px solid #ddd;">{{ forloop.counter }}</td>
+                        <td style="padding: 8px; border-bottom: 1px solid #ddd;">
+                            <input type="checkbox" name="materials" value="{{ material.id }}">
+                        </td>
+                        <td style="padding: 8px; border-bottom: 1px solid #ddd;">{{ material.name }}</td>
+                        <td style="padding: 8px; border-bottom: 1px solid #ddd;">
+                            <input type="number" name="quantity_{{ material.id }}" value="{{ material.quantity|default:0 }}" min="0" style="width: 60px;"
+                                   data-price="{{ material.price_per_unit }}" oninput="updateAmount(this)">
+                        </td>
+                        <td style="padding: 8px; border-bottom: 1px solid #ddd;">{{ material.unit }}</td>
+                        <td style="padding: 8px; border-bottom: 1px solid #ddd;">{{ material.price_per_unit }}</td>
+                        <td style="padding: 8px; border-bottom: 1px solid #ddd;" class="amount-cell" id="amount_{{ material.id }}">{{ material.amount }}</td>
+                    </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+            <br>
+            <div>
+                <label for="export-limit">Select Number of Materials to Export:</label>
+                <select id="export-limit" name="limit">
+                    <option value="10">10</option>
+                    <option value="25">25</option>
+                    <option value="50">50</option>
+                    <option value="100">100</option>
+                    <option value="all">All</option>
+                </select>
+                <button type="button" id="export-button">Export to Excel</button>
+            </div>
+        </form>
+        <br>
+      </div>
+    <script>
+        // Function to update the amount based on quantity and price
+        function updateAmount(inputElement) {
+            const quantity = parseFloat(inputElement.value) || 0;
+            const price = parseFloat(inputElement.getAttribute('data-price')) || 0;
+            const amount = quantity * price;
+
+            // Find the corresponding amount cell and update it
+            const amountCell = document.getElementById('amount_' + inputElement.name.split('_')[1]);
+            amountCell.innerText = amount.toFixed(2); // Set the amount with two decimal places
+        }
+
+        // Add event listener for export button
+        document.getElementById('export-button').addEventListener('click', function () {
+            const selectedMaterials = Array.from(document.querySelectorAll('input[name="materials"]:checked'));
+            if (selectedMaterials.length === 0) {
+                alert("Please select at least one material to export.");
+                return;
+            }
+            const form = document.getElementById('materials-form');
+            form.submit();
+        });
+    </script>
+</body>
+</html>
